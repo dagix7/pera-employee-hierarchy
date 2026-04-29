@@ -15,6 +15,7 @@
     "@mantine/modals": "^7.17.8",
     "@mantine/notifications": "^7.17.8",
     "@reduxjs/toolkit": "^2.11.2",
+    "@tabler/icons-react": "^3.41.1",
     "axios": "^1.15.2",
     "next": "14.1.4",
     "react": "^18",
