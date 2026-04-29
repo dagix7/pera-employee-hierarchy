@@ -1,113 +1,212 @@
-import Image from "next/image";
+'use client';
+
+import { useEffect, useState } from 'react';
+import { Container, Title, Button, Group, Box, Text, Alert, Paper } from '@mantine/core';
+import { modals } from '@mantine/modals';
+import { notifications } from '@mantine/notifications';
+import { IconPlus, IconAlertCircle, IconCheck, IconTrash } from '@tabler/icons-react';
+import { useAppDispatch, useAppSelector } from '@/store';
+import {
+  fetchPositionsTree,
+  createPosition,
+  updatePosition,
+  deletePosition,
+} from '@/features/positions/positionsSlice';
+import { PositionNode } from '@/components/position/PositionNode';
+import { PositionForm } from '@/components/position/PositionForm';
+import { PositionSkeleton } from '@/components/common/PositionSkeleton';
+import { EmptyState } from '@/components/common/EmptyState';
+import { Position } from '@/types/position';
+import { PositionFormData } from '@/schemas/positionSchema';
 
 export default function Home() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+  const dispatch = useAppDispatch();
+  const { tree, loading, error } = useAppSelector((state) => state.positions);
+  const [actionLoading, setActionLoading] = useState(false);
 
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-full sm:before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full sm:after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
+  useEffect(() => {
+    dispatch(fetchPositionsTree());
+  }, [dispatch]);
+
+  const handleCreatePosition = (parentId?: string) => {
+    modals.open({
+      title: parentId ? 'Create Child Position' : 'Create Root Position',
+      size: 'lg',
+      children: (
+        <PositionForm
+          parentId={parentId}
+          loading={actionLoading}
+          onSubmit={async (data: PositionFormData) => {
+            setActionLoading(true);
+            try {
+              await dispatch(createPosition(data)).unwrap();
+              notifications.show({
+                title: 'Success',
+                message: 'Position created successfully',
+                color: 'teal',
+                icon: <IconCheck size={18} />,
+              });
+              modals.closeAll();
+              dispatch(fetchPositionsTree());
+            } catch (err: any) {
+              notifications.show({
+                title: 'Error',
+                message: err || 'Failed to create position',
+                color: 'red',
+                icon: <IconAlertCircle size={18} />,
+              });
+            } finally {
+              setActionLoading(false);
+            }
+          }}
+          onCancel={() => modals.closeAll()}
         />
-      </div>
+      ),
+    });
+  };
 
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
+  const handleEditPosition = (position: Position) => {
+    modals.open({
+      title: 'Edit Position',
+      size: 'lg',
+      children: (
+        <PositionForm
+          position={position}
+          loading={actionLoading}
+          onSubmit={async (data: PositionFormData) => {
+            setActionLoading(true);
+            try {
+              await dispatch(updatePosition({ id: position.id, data })).unwrap();
+              notifications.show({
+                title: 'Success',
+                message: 'Position updated successfully',
+                color: 'teal',
+                icon: <IconCheck size={18} />,
+              });
+              modals.closeAll();
+              dispatch(fetchPositionsTree());
+            } catch (err: any) {
+              notifications.show({
+                title: 'Error',
+                message: err || 'Failed to update position',
+                color: 'red',
+                icon: <IconAlertCircle size={18} />,
+              });
+            } finally {
+              setActionLoading(false);
+            }
+          }}
+          onCancel={() => modals.closeAll()}
+        />
+      ),
+    });
+  };
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
+  const handleDeletePosition = (position: Position) => {
+    modals.openConfirmModal({
+      title: 'Delete Position',
+      centered: true,
+      children: (
+        <Text size="sm">
+          Are you sure you want to delete <strong>{position.name}</strong>? 
+          This action cannot be undone. Note: Positions with children cannot be deleted.
+        </Text>
+      ),
+      labels: { confirm: 'Delete', cancel: 'Cancel' },
+      confirmProps: { color: 'red', leftSection: <IconTrash size={16} /> },
+      onConfirm: async () => {
+        try {
+          await dispatch(deletePosition(position.id)).unwrap();
+          notifications.show({
+            title: 'Success',
+            message: 'Position deleted successfully',
+            color: 'teal',
+            icon: <IconCheck size={18} />,
+          });
+          dispatch(fetchPositionsTree());
+        } catch (err: any) {
+          notifications.show({
+            title: 'Error',
+            message: err || 'Failed to delete position',
+            color: 'red',
+            icon: <IconAlertCircle size={18} />,
+          });
+        }
+      },
+    });
+  };
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore starter templates for Next.js.
-          </p>
-        </a>
+  const hasRootPosition = tree.length > 0;
 
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50 text-balance`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+  return (
+    <Box className="min-h-screen bg-gradient-to-br from-gray-50 to-teal-50">
+      <Container size="xl" py="xl">
+        {/* Header */}
+        <Paper shadow="sm" p="xl" radius="md" className="mb-8 bg-white border border-gray-100">
+          <Group justify="space-between" align="center">
+            <Box>
+              <Title order={1} className="text-gray-800 mb-2">
+                Organizational Hierarchy
+              </Title>
+              <Text size="sm" c="dimmed">
+                Manage your company's position structure
+              </Text>
+            </Box>
+            {hasRootPosition && (
+              <Button
+                leftSection={<IconPlus size={18} />}
+                color="teal"
+                size="md"
+                onClick={() => handleCreatePosition()}
+              >
+                Add Root Position
+              </Button>
+            )}
+          </Group>
+        </Paper>
+
+        {/* Error Alert */}
+        {error && (
+          <Alert
+            icon={<IconAlertCircle size={18} />}
+            title="Error"
+            color="red"
+            mb="md"
+            withCloseButton
+            onClose={() => {}}
+          >
+            {error}
+          </Alert>
+        )}
+
+        {/* Content */}
+        <Paper shadow="sm" p="xl" radius="md" className="bg-white border border-gray-100">
+          {loading && !hasRootPosition ? (
+            <PositionSkeleton count={5} />
+          ) : !hasRootPosition ? (
+            <EmptyState onCreateRoot={() => handleCreatePosition()} />
+          ) : (
+            <Box>
+              {(tree || []).map((position) => (
+                <PositionNode
+                  key={position.id}
+                  position={position}
+                  onAddChild={handleCreatePosition}
+                  onEdit={handleEditPosition}
+                  onDelete={handleDeletePosition}
+                />
+              ))}
+            </Box>
+          )}
+        </Paper>
+
+        {/* Footer */}
+        <Box mt="xl" className="text-center">
+          <Text size="xs" c="dimmed">
+            Perago Information System © 2026
+          </Text>
+        </Box>
+      </Container>
+    </Box>
   );
 }

@@ -3,31 +3,73 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
+  --foreground-rgb: 31, 41, 55;
+  --background-start-rgb: 249, 250, 251;
   --background-end-rgb: 255, 255, 255;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
+  --accent-green: 18, 184, 134;
 }
 
 body {
   color: rgb(var(--foreground-rgb));
   background: linear-gradient(
       to bottom,
-      transparent,
+      rgb(var(--background-start-rgb)),
       rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+    );
+  min-height: 100vh;
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #12b886;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #0ca678;
+}
+
+/* Tree connector lines */
+.tree-line {
+  position: relative;
+}
+
+.tree-line::before {
+  content: '';
+  position: absolute;
+  left: -20px;
+  top: 0;
+  bottom: 50%;
+  width: 20px;
+  border-left: 2px solid #e9ecef;
+  border-bottom: 2px solid #e9ecef;
+  border-bottom-left-radius: 8px;
+}
+
+.tree-line:last-child::before {
+  border-left: 2px solid #e9ecef;
+}
+
+/* Smooth transitions */
+.transition-all {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Card hover effect */
+.card-hover {
+  transition: all 0.2s ease-in-out;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px rgba(18, 184, 134, 0.1);
 }
