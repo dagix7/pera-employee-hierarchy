@@ -187,7 +187,7 @@ export default function Home() {
             <EmptyState onCreateRoot={() => handleCreatePosition()} />
           ) : (
             <Box>
-              {tree.map((position) => (
+              {(tree || []).map((position) => (
                 <PositionNode
                   key={position.id}
                   position={position}
